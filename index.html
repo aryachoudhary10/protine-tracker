@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f7f4f9">
+<title>Protein</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- ONBOARDING -->
+<section id="onboarding" class="onboarding hidden">
+  <div class="ob-card">
+    <p class="ob-step">Step <span id="obStep">1</span> of 4</p>
+    <h1 class="ob-title" id="obTitle">Let's set your target</h1>
+    <p class="ob-sub" id="obSub">A few numbers and we'll work out how much protein you actually need.</p>
+
+    <div class="ob-body">
+      <div class="ob-pane" data-pane="0">
+        <label class="field">
+          <span>Weight</span>
+          <div class="input-row"><input id="fWeight" type="number" inputmode="decimal" placeholder="70"><em>kg</em></div>
+        </label>
+        <label class="field">
+          <span>Height</span>
+          <div class="input-row"><input id="fHeight" type="number" inputmode="decimal" placeholder="175"><em>cm</em></div>
+        </label>
+        <label class="field">
+          <span>Age</span>
+          <div class="input-row"><input id="fAge" type="number" inputmode="numeric" placeholder="25"><em>yrs</em></div>
+        </label>
+      </div>
+
+      <div class="ob-pane hidden" data-pane="1">
+        <div class="choices" id="fSex">
+          <button class="choice" data-val="male"><b>Male</b></button>
+          <button class="choice" data-val="female"><b>Female</b></button>
+        </div>
+      </div>
+
+      <div class="ob-pane hidden" data-pane="2">
+        <div class="choices col" id="fActivity">
+          <button class="choice" data-val="sedentary"><b>Sedentary</b><i>Desk job, little exercise</i></button>
+          <button class="choice" data-val="light"><b>Lightly active</b><i>1–2 workouts a week</i></button>
+          <button class="choice" data-val="moderate"><b>Moderately active</b><i>3–4 workouts a week</i></button>
+          <button class="choice" data-val="active"><b>Very active</b><i>5–6 workouts a week</i></button>
+          <button class="choice" data-val="athlete"><b>Athlete</b><i>Daily hard training</i></button>
+        </div>
+      </div>
+
+      <div class="ob-pane hidden" data-pane="3">
+        <div class="choices col" id="fGoal">
+          <button class="choice" data-val="maintain"><b>Maintain</b><i>Stay where I am</i></button>
+          <button class="choice" data-val="cut"><b>Lose fat</b><i>Cut while keeping muscle</i></button>
+          <button class="choice" data-val="bulk"><b>Build muscle</b><i>Gain lean mass</i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ob-nav">
+      <button id="obBack" class="btn ghost">Back</button>
+      <button id="obNext" class="btn primary">Continue</button>
+    </div>
+  </div>
+</section>
+
+<!-- APP -->
+<main id="app" class="app hidden">
+
+  <!-- HOME -->
+  <section class="screen" data-screen="home">
+    <header class="head">
+      <h1 class="brand">Today</h1>
+      <button class="icon-btn" id="goProfileTop">⚙</button>
+    </header>
+
+    <div class="card ring-card">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 200 200" class="ring">
+          <defs>
+            <linearGradient id="ringGrad" gradientUnits="userSpaceOnUse" x1="16" y1="16" x2="184" y2="184">
+              <stop offset="0%" stop-color="#ff9ecd"/>
+              <stop offset="50%" stop-color="#a78bfa"/>
+              <stop offset="100%" stop-color="#7dd3fc"/>
+            </linearGradient>
+          </defs>
+          <circle cx="100" cy="100" r="84" class="ring-bg"/>
+          <circle cx="100" cy="100" r="84" class="ring-fg" id="ringFg"/>
+        </svg>
+        <div class="ring-mid">
+          <b id="todayVal">0</b>
+          <span id="todayTarget">of 0g</span>
+        </div>
+      </div>
+      <p class="ring-note" id="ringNote">Nothing logged yet today.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Quick add</h2>
+        <button class="pill" id="openAll">All foods</button>
+      </div>
+      <div class="chips" id="quickChips"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Logged today</h2><span class="muted" id="entryCount"></span></div>
+      <ul class="entries" id="entries"></ul>
+    </div>
+  </section>
+
+  <!-- WEEK -->
+  <section class="screen hidden" data-screen="week">
+    <header class="head"><h1 class="brand">Progress</h1></header>
+
+    <div class="card">
+      <div class="card-head"><h2>This week</h2><span class="pill soft" id="weekRange"></span></div>
+      <div class="big-stat">
+        <b id="weekAvg">0</b><span>g avg / day</span>
+      </div>
+      <div class="bars" id="bars"></div>
+      <div class="bar-labels" id="barLabels"></div>
+      <div class="legend"><span class="dash"></span> target <b id="legendTarget">0g</b></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Breakdown</h2><span class="pill soft">7 days</span></div>
+      <div class="stat-grid">
+        <div><b id="stHit">0</b><span>days on target</span></div>
+        <div><b id="stTotal">0g</b><span>week total</span></div>
+        <div><b id="stBest">0g</b><span>best day</span></div>
+        <div><b id="stGap">0g</b><span>avg shortfall</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Top sources</h2></div>
+      <div id="sources" class="sources"></div>
+    </div>
+  </section>
+
+  <!-- FOODS -->
+  <section class="screen hidden" data-screen="foods">
+    <header class="head">
+      <h1 class="brand">Foods</h1>
+      <button class="icon-btn" id="addFoodBtn">＋</button>
+    </header>
+    <div class="card">
+      <input id="foodSearch" class="search" type="search" placeholder="Search foods…">
+      <div class="food-list" id="foodList"></div>
+    </div>
+  </section>
+
+  <!-- PROFILE -->
+  <section class="screen hidden" data-screen="profile">
+    <header class="head"><h1 class="brand">Profile</h1></header>
+
+    <div class="card">
+      <div class="card-head"><h2>Your target</h2><button class="pill" id="editStats">Edit stats</button></div>
+      <div class="big-stat"><b id="pTarget">0</b><span>g protein / day</span></div>
+      <p class="muted small" id="pFormula"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Stats</h2></div>
+      <div class="stat-grid">
+        <div><b id="pWeight">–</b><span>weight</span></div>
+        <div><b id="pHeight">–</b><span>height</span></div>
+        <div><b id="pBmi">–</b><span>BMI</span></div>
+        <div><b id="pGoal">–</b><span>goal</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Siri shortcut</h2></div>
+      <p class="muted small">One Shortcut for everything: <b>Dictate Text</b> → <b>Open URL</b> with your speech on the end. Then say “log food” and just talk.</p>
+      <code class="code" id="shortcutUrl"></code>
+      <button class="btn ghost wide" id="copyUrl">Copy URL</button>
+      <p class="muted small" style="margin-top:12px">Or skip dictation and hardwire one food per Shortcut:</p>
+      <code class="code" id="shortcutUrl2"></code>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Data</h2></div>
+      <button class="btn ghost wide" id="exportBtn">Export JSON</button>
+      <button class="btn danger wide" id="resetBtn">Reset everything</button>
+    </div>
+  </section>
+
+  <nav class="nav">
+    <button class="nav-btn active" data-go="home">⌂</button>
+    <button class="nav-btn" data-go="week">📊</button>
+    <button class="fab" id="fab">＋</button>
+    <button class="nav-btn" data-go="foods">🍽</button>
+    <button class="nav-btn" data-go="profile">👤</button>
+  </nav>
+</main>
+
+<!-- LOG SHEET -->
+<div id="sheet" class="sheet-wrap hidden">
+  <div class="sheet-bg" data-close></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div id="sheetPick">
+      <h2 class="sheet-title">What did you eat?</h2>
+      <input id="sheetSearch" class="search" type="search" placeholder="paneer bhurji 100g, or 2 katori dal">
+      <div id="saidBox" class="said hidden"></div>
+      <button class="direct-link" id="openDirect">💪 Just log protein grams instead</button>
+      <div class="food-list tall" id="sheetList"></div>
+    </div>
+
+    <div id="sheetDirect" class="hidden">
+      <h2 class="sheet-title">How much protein?</h2>
+      <div class="input-row big"><input id="dGrams" type="number" inputmode="decimal" placeholder="30"><em>g protein</em></div>
+      <div class="quick-qty" id="dQuick">
+        <button data-p="10">10</button><button data-p="20">20</button><button data-p="25">25</button>
+        <button data-p="30">30</button><button data-p="40">40</button>
+      </div>
+      <label class="field"><span>What was it? (optional)</span><div class="input-row"><input id="dLabel" placeholder="Protein bar"></div></label>
+      <div class="sheet-nav">
+        <button class="btn ghost" id="dBack">Back</button>
+        <button class="btn primary" id="dSave">Log it</button>
+      </div>
+    </div>
+    <div id="sheetQty" class="hidden">
+      <h2 class="sheet-title" id="qtyName">—</h2>
+      <p class="muted center" id="qtyUnit"></p>
+      <div class="stepper">
+        <button id="qMinus">−</button>
+        <b id="qVal">1</b>
+        <button id="qPlus">+</button>
+      </div>
+      <div class="quick-qty">
+        <button data-q="0.5">½</button><button data-q="1">1</button>
+        <button data-q="1.5">1½</button><button data-q="2">2</button><button data-q="3">3</button>
+      </div>
+      <div class="gram-row">
+        <label class="field flex">
+          <span>Exact grams (optional)</span>
+          <div class="input-row"><input id="qGrams" type="number" inputmode="decimal" placeholder="auto"><em>g</em></div>
+        </label>
+      </div>
+      <p class="qty-out" id="qtyOut">0g protein</p>
+      <div class="sheet-nav">
+        <button class="btn ghost" id="qBack">Back</button>
+        <button class="btn primary" id="qSave">Log it</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM FOOD SHEET -->
+<div id="newFood" class="sheet-wrap hidden">
+  <div class="sheet-bg" data-close></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2 class="sheet-title" id="nfTitle">New food</h2>
+    <div class="nf-top">
+      <label class="field nf-emoji"><span>Icon</span><div class="input-row"><input id="nfEmoji" maxlength="2" placeholder="🍽"></div></label>
+      <label class="field flex"><span>Name</span><div class="input-row"><input id="nfName" placeholder="Amul dahi"></div></label>
+    </div>
+    <label class="field"><span>You eat it by the…</span><div class="input-row"><input id="nfUnit" placeholder="chilla"><em>unit</em></div></label>
+
+    <div class="mode-tabs">
+      <button class="mt on" data-mode="simple">I know the protein</button>
+      <button class="mt" data-mode="recipe">Work it out for me</button>
+    </div>
+
+    <div id="nfSimple">
+      <label class="field"><span>Weight of one unit</span><div class="input-row"><input id="nfGrams" type="number" inputmode="decimal" placeholder="150"><em>g</em></div></label>
+      <label class="field"><span>Protein per 100g</span><div class="input-row"><input id="nfProt" type="number" inputmode="decimal" placeholder="3.5"><em>g</em></div></label>
+    </div>
+
+    <div id="nfRecipe" class="hidden">
+      <p class="muted small">List what actually goes in the pan, then say how many it makes.</p>
+      <div id="ingList"></div>
+      <button class="btn ghost wide" id="addIng">＋ Add ingredient</button>
+      <label class="field serves"><span>Makes how many?</span><div class="input-row"><input id="nfServes" type="number" inputmode="numeric" placeholder="4"><em id="unitEcho">servings</em></div></label>
+      <p class="recipe-out" id="recipeOut"></p>
+    </div>
+
+    <p class="muted small" id="nfHint"></p>
+    <div class="sheet-nav">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="nfSave">Save food</button>
+    </div>
+    <button class="btn danger wide hidden" id="nfDelete">Delete this food</button>
+  </div>
+</div>
+
+<script src="foods.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
