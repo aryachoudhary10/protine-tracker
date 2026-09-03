@@ -75,9 +75,14 @@
   <!-- HOME -->
   <section class="screen" data-screen="home">
     <header class="head">
-      <h1 class="brand">Today</h1>
+      <div class="daynav">
+        <button class="day-arrow" id="dayPrev" aria-label="Previous day">‹</button>
+        <h1 class="brand" id="dayLabel">Today</h1>
+        <button class="day-arrow" id="dayNext" aria-label="Next day">›</button>
+      </div>
       <button class="icon-btn" id="goProfileTop">⚙</button>
     </header>
+    <button class="backdate hidden" id="backdate"></button>
 
     <div class="card ring-card">
       <div class="ring-wrap">
@@ -109,7 +114,7 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>Logged today</h2><span class="muted" id="entryCount"></span></div>
+      <div class="card-head"><h2 id="loggedTitle">Logged today</h2><span class="muted" id="entryCount"></span></div>
       <ul class="entries" id="entries"></ul>
     </div>
   </section>
@@ -204,9 +209,9 @@
 <!-- LOG SHEET -->
 <div id="sheet" class="sheet-wrap hidden">
   <div class="sheet-bg" data-close></div>
-  <div class="sheet">
+  <div class="sheet flex">
     <div class="grab"></div>
-    <div id="sheetPick">
+    <div id="sheetPick" class="pane">
       <h2 class="sheet-title">What did you eat?</h2>
       <input id="sheetSearch" class="search" type="search" placeholder="paneer bhurji 100g, or 2 katori dal">
       <div id="saidBox" class="said hidden"></div>
@@ -214,7 +219,7 @@
       <div class="food-list tall" id="sheetList"></div>
     </div>
 
-    <div id="sheetDirect" class="hidden">
+    <div id="sheetDirect" class="pane hidden">
       <h2 class="sheet-title">How much protein?</h2>
       <div class="input-row big"><input id="dGrams" type="number" inputmode="decimal" placeholder="30"><em>g protein</em></div>
       <div class="quick-qty" id="dQuick">
@@ -227,7 +232,7 @@
         <button class="btn primary" id="dSave">Log it</button>
       </div>
     </div>
-    <div id="sheetQty" class="hidden">
+    <div id="sheetQty" class="pane hidden">
       <h2 class="sheet-title" id="qtyName">—</h2>
       <p class="muted center" id="qtyUnit"></p>
       <div class="stepper">
@@ -251,6 +256,34 @@
         <button class="btn primary" id="qSave">Log it</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- EDIT A LOGGED ENTRY -->
+<div id="editSheet" class="sheet-wrap hidden">
+  <div class="sheet-bg" data-close></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2 class="sheet-title" id="edName">—</h2>
+    <p class="muted center small" id="edHint"></p>
+
+    <div id="edUnitWrap">
+      <div class="stepper">
+        <button id="edMinus">−</button>
+        <b id="edQtyVal">1</b>
+        <button id="edPlus">+</button>
+      </div>
+      <label class="field"><span>Weight</span><div class="input-row"><input id="edGrams" type="number" inputmode="decimal"><em>g</em></div></label>
+    </div>
+
+    <label class="field"><span>Protein</span><div class="input-row"><input id="edProt" type="number" inputmode="decimal"><em>g</em></div></label>
+    <label class="field"><span>Date</span><div class="input-row"><input id="edDate" type="date"></div></label>
+
+    <div class="sheet-nav">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="edSave">Save</button>
+    </div>
+    <button class="btn danger wide" id="edDelete">Delete this entry</button>
   </div>
 </div>
 

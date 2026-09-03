@@ -38,7 +38,11 @@ function computeTarget(p){
 const target = () => state.profile ? state.profile.target : 0;
 
 /* ---------- dates ---------- */
-const dayKey = d => { const x = new Date(d); x.setHours(0,0,0,0); return x.toISOString().slice(0,10); };
+// local calendar date — toISOString() would shift the day in any timezone east of UTC
+const dayKey = d => {
+  const x = new Date(d);
+  return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0');
+};
 const today = () => dayKey(new Date());
 function weekDays(){
   const now = new Date(); now.setHours(0,0,0,0);
@@ -48,12 +52,30 @@ function weekDays(){
 }
 const proteinOn = k => state.log.filter(e => e.day === k).reduce((s,e) => s + e.protein, 0);
 
+/* the day being viewed and logged into — not necessarily today */
+let viewDay = today();
+const parseDay = k => new Date(k + 'T00:00:00');
+function dayLabel(k){
+  if (k === today()) return 'Today';
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  if (k === dayKey(y)) return 'Yesterday';
+  const d = parseDay(k);
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()] + ' ' + fmtDate(d);
+}
+function shiftDay(n){
+  const d = parseDay(viewDay);
+  d.setDate(d.getDate() + n);
+  if (dayKey(d) > today()) return;    // can't log into the future
+  viewDay = dayKey(d);
+  renderHome();
+}
+
 /* ---------- logging ---------- */
 function addEntry(food, qty, grams){
   const g = grams || qty * food.gramsPerUnit;
   state.log.push({
     id: Date.now() + '' + Math.random().toString(36).slice(2,6),
-    ts: Date.now(), day: today(),
+    ts: Date.now(), day: viewDay,
     foodId: food.id, name: food.name, emoji: food.emoji || '🍽',
     qty: qty, unit: food.unit, weighed: !!grams,
     grams: Math.round(g), protein: Math.round(g * food.protein / 100 * 10) / 10
@@ -64,7 +86,7 @@ function addEntry(food, qty, grams){
 function addProtein(p, label){
   state.log.push({
     id: Date.now() + '' + Math.random().toString(36).slice(2,6),
-    ts: Date.now(), day: today(),
+    ts: Date.now(), day: viewDay,
     foodId: '_direct', name: label || 'Protein', emoji: '💪',
     qty: 1, unit: null, direct: true, weighed: false, grams: 0, protein: r1(p)
   });
@@ -248,15 +270,21 @@ $('#goProfileTop').onclick = () => go('profile');
 function renderAll(){ renderHome(); renderWeek(); renderFoods(); renderProfile(); }
 
 function renderHome(){
-  const t = target(), have = Math.round(proteinOn(today()));
+  const t = target(), have = Math.round(proteinOn(viewDay)), isNow = viewDay === today();
   const pct = t ? Math.min(have / t, 1) : 0;
   $('#ringFg').style.strokeDashoffset = 527.8 * (1 - pct);
   $('#todayVal').textContent = have + 'g';
   $('#todayTarget').textContent = 'of ' + t + 'g';
   const left = t - have;
-  $('#ringNote').textContent = have === 0 ? 'Nothing logged yet today.'
-    : left > 0 ? left + 'g to go — about ' + Math.max(1, Math.round(left / 20)) + ' more servings.'
+  $('#ringNote').textContent = have === 0 ? 'Nothing logged ' + (isNow ? 'yet today.' : 'this day.')
+    : left > 0 ? left + 'g ' + (isNow ? 'to go — about ' + Math.max(1, Math.round(left / 20)) + ' more servings.' : 'short of target.')
     : 'Target hit. ' + Math.abs(left) + 'g over.';
+
+  $('#dayLabel').textContent = dayLabel(viewDay);
+  $('#dayNext').disabled = isNow;
+  $('#loggedTitle').textContent = 'Logged ' + (isNow ? 'today' : dayLabel(viewDay).toLowerCase());
+  $('#backdate').classList.toggle('hidden', isNow);
+  $('#backdate').textContent = '↩ You\'re adding to ' + dayLabel(viewDay) + ' — tap to return to today';
 
   // quick chips: most-logged foods, else a sensible starter set
   const counts = {};
@@ -274,15 +302,16 @@ function renderHome(){
     toast('Logged 1 ' + f.unit + ' ' + f.name);
   });
 
-  const list = state.log.filter(e => e.day === today()).sort((a,b) => b.ts - a.ts);
+  const list = state.log.filter(e => e.day === viewDay).sort((a,b) => b.ts - a.ts);
   $('#entryCount').textContent = list.length ? list.length + ' item' + (list.length>1?'s':'') : '';
   $('#entries').innerHTML = list.length ? list.map(e =>
-    '<li><span class="e-emoji">' + e.emoji + '</span>' +
+    '<li><button class="e-tap" data-edit-entry="' + e.id + '">' +
+    '<span class="e-emoji">' + e.emoji + '</span>' +
     '<span class="e-main"><b>' + esc(e.name) + '</b><span>' + esc(entryLabel(e)) + '</span></span>' +
-    '<span class="e-val">' + e.protein + 'g</span>' +
-    '<button class="e-del" data-del="' + e.id + '">✕</button></li>').join('')
+    '<span class="e-val">' + e.protein + 'g</span><span class="e-chev">›</span></button></li>').join('')
     : '<p class="empty">Tap ＋ or a quick-add chip to log something.</p>';
-  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => removeEntry(b.dataset.del));
+  document.querySelectorAll('[data-edit-entry]').forEach(b =>
+    b.onclick = () => openEditEntry(b.dataset.editEntry));
 }
 
 function renderWeek(){
@@ -393,7 +422,7 @@ $('#dSave').onclick = () => {
   if (!(p > 0 && p <= 500)) return toast('Enter the protein in grams');
   addProtein(p, $('#dLabel').value.trim());
   closeSheets();
-  toast('Logged ' + r1(p) + 'g — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+  toast('Logged ' + r1(p) + 'g — ' + totalMsg());
 };
 let said = null;
 function renderSheetList(){
@@ -410,7 +439,7 @@ function renderSheetList(){
     $('#saidLog').onclick = () => {
       addProtein(said.direct, '');
       closeSheets();
-      toast('Logged ' + r1(said.direct) + 'g — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+      toast('Logged ' + r1(said.direct) + 'g — ' + totalMsg());
     };
   } else if (said && said.food){
     const f = said.food, g = said.grams || said.qty * f.gramsPerUnit;
@@ -423,7 +452,7 @@ function renderSheetList(){
     $('#saidLog').onclick = () => {
       addEntry(f, said.qty, said.grams);
       closeSheets();
-      toast('Logged ' + f.name + ' — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+      toast('Logged ' + f.name + ' — ' + totalMsg());
     };
   } else $('#saidBox').classList.add('hidden');
 
@@ -465,7 +494,75 @@ $('#fab').onclick = openSheet;
 $('#openAll').onclick = openSheet;
 $('#foodSearch').oninput = renderFoods;
 
-function closeSheets(){ logAfterSave = false; $('#sheet').classList.add('hidden'); $('#newFood').classList.add('hidden'); }
+/* ---------- edit a logged entry ---------- */
+let edEntry = null, edQty = 1;
+function openEditEntry(id){
+  const e = state.log.find(x => x.id === id); if (!e) return;
+  edEntry = e; edQty = e.qty || 1;
+  const f = foodById(e.foodId);
+  $('#edName').textContent = e.emoji + ' ' + e.name;
+  $('#edUnitWrap').classList.toggle('hidden', !!e.direct);
+  $('#edHint').textContent = e.direct ? 'Logged as a plain protein amount.'
+    : f ? '1 ' + f.unit + ' = ' + f.gramsPerUnit + 'g · ' + f.protein + 'g protein per 100g'
+        : 'This food was deleted — edit the grams or protein directly.';
+  $('#edGrams').value = e.grams || '';
+  $('#edProt').value = e.protein;
+  $('#edDate').value = e.day;
+  $('#edDate').max = today();
+  $('#edQtyVal').textContent = fmtQty(edQty);
+  $('#editSheet').classList.remove('hidden');
+}
+// qty drives grams drives protein, but a hand-typed protein always wins
+function edFromQty(){
+  const f = foodById(edEntry.foodId); if (!f) return;
+  const g = edQty * f.gramsPerUnit;
+  $('#edQtyVal').textContent = fmtQty(edQty);
+  $('#edGrams').value = Math.round(g);
+  $('#edProt').value = r1(g * f.protein / 100);
+}
+$('#edMinus').onclick = () => { edQty = Math.max(.5, Math.round((edQty - .5)*2)/2); edFromQty(); };
+$('#edPlus').onclick  = () => { edQty = Math.round((edQty + .5)*2)/2; edFromQty(); };
+$('#edGrams').oninput = () => {
+  const f = foodById(edEntry.foodId), g = +$('#edGrams').value;
+  if (f && g > 0){ edQty = r1(g / f.gramsPerUnit); $('#edQtyVal').textContent = fmtQty(edQty);
+                   $('#edProt').value = r1(g * f.protein / 100); }
+};
+$('#edSave').onclick = () => {
+  const p = +$('#edProt').value, g = +$('#edGrams').value, d = $('#edDate').value;
+  if (!(p >= 0 && p <= 500)) return toast('Protein must be between 0 and 500g');
+  if (!d || d > today()) return toast('Pick a date up to today');
+  edEntry.protein = r1(p);
+  edEntry.day = d;
+  if (!edEntry.direct){
+    const f = foodById(edEntry.foodId);
+    edEntry.grams = Math.round(g);
+    edEntry.qty = edQty;
+    // still a clean unit count? keep showing it as "4 eggs", not "200g weighed"
+    edEntry.weighed = !f || Math.abs(g - edQty * f.gramsPerUnit) > 0.5;
+  }
+  save();
+  viewDay = d;                       // follow the entry if it moved days
+  closeSheets(); renderAll();
+  toast('Updated — ' + Math.round(proteinOn(d)) + 'g on ' + dayLabel(d).toLowerCase());
+};
+$('#edDelete').onclick = () => {
+  if (!confirm('Delete this entry?')) return;
+  removeEntry(edEntry.id);
+  closeSheets();
+  toast('Entry deleted');
+};
+
+/* ---------- day navigation ---------- */
+$('#dayPrev').onclick = () => shiftDay(-1);
+$('#dayNext').onclick = () => shiftDay(1);
+$('#backdate').onclick = () => { viewDay = today(); renderHome(); };
+
+function closeSheets(){
+  logAfterSave = false;
+  $('#sheet').classList.add('hidden');
+  $('#newFood').classList.add('hidden');
+  $('#editSheet').classList.add('hidden');
+}
 document.querySelectorAll('[data-close]').forEach(el => el.onclick = closeSheets);
 
 /* ---------- custom food ---------- */
@@ -604,6 +701,7 @@ $('#resetBtn').onclick = () => {
 /* ---------- helpers ---------- */
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const r1 = n => Math.round(n * 10) / 10;
+const totalMsg = () => Math.round(proteinOn(viewDay)) + 'g of ' + target() + 'g ' + dayLabel(viewDay).toLowerCase();
 const fmtQty = q => q % 1 === 0 ? q : q.toFixed(1).replace('.5','½').replace('0½','½');
 const entryLabel = e =>
   e.direct ? 'entered directly'
@@ -622,29 +720,48 @@ function handleUrl(){
     const g = +direct;
     if (!(g > 0 && g <= 500)) return toast('Bad protein amount: ' + direct);
     addProtein(g, p.get('label') || '');
-    return toast('✓ ' + r1(g) + 'g — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+    return toast('✓ ' + r1(g) + 'g — ' + totalMsg());
   }
 
   if (spoken){                                   // "hey siri, log food" -> dictation
     const r = parseSaid(spoken);
     if (r.direct){
       addProtein(r.direct, '');
-      return toast('✓ ' + r1(r.direct) + 'g — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+      return toast('✓ ' + r1(r.direct) + 'g — ' + totalMsg());
     }
     if (!r.food){
       openSheet(); $('#sheetSearch').value = spoken; renderSheetList();
       return toast('Couldn\'t place “' + spoken + '” — pick it below?');
     }
     addEntry(r.food, r.qty, r.grams);
-    return toast('✓ ' + r.food.name + ' — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+    return toast('✓ ' + r.food.name + ' — ' + totalMsg());
   }
 
   const f = foodById(id) || allFoods().find(x => x.name.toLowerCase() === id.toLowerCase());
   if (!f) return toast('Unknown food: ' + id);
   const q = Math.max(.25, +p.get('qty') || 1);
   addEntry(f, q, +p.get('g') || 0);
-  toast('✓ ' + fmtQty(q) + ' ' + f.name + ' — ' + Math.round(proteinOn(today())) + 'g of ' + target() + 'g today');
+  toast('✓ ' + fmtQty(q) + ' ' + f.name + ' — ' + totalMsg());
 }
+
+/* ---------- keyboard ----------
+   iOS shrinks the visual viewport but leaves fixed elements where they were, so a
+   bottom sheet ends up behind the keyboard. Track the gap and lift the sheet by it. */
+if (window.visualViewport){
+  const vv = window.visualViewport;
+  const track = () => {
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty('--kb', kb + 'px');
+    document.body.classList.toggle('kb', kb > 80);
+  };
+  vv.addEventListener('resize', track);
+  vv.addEventListener('scroll', track);
+  track();
+}
+document.addEventListener('focusin', e => {
+  if (e.target.matches('input, select, textarea') && e.target.closest('.sheet'))
+    setTimeout(() => e.target.scrollIntoView({ block:'center', behavior:'smooth' }), 250);
+});
 
 /* ---------- boot ---------- */
 if (!state.profile){
