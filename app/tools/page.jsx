@@ -123,9 +123,56 @@ export default function Tools() {
               opens with the text already loaded.
             </p>
             <p>
-              iOS ignores that, but the Shortcuts app fills the gap: make a shortcut that
-              takes text, sends it to <code>{origin || "…"}/api/rephrase</code>, and shows
-              the result. Enable <i>Show in Share Sheet</i> and it behaves the same way.
+              iOS ignores <code>share_target</code> entirely — Safari doesn&rsquo;t implement
+              it, so this site can never appear in an iPhone share sheet. Shortcuts can,
+              though, and a Shortcut triggered by Back Tap is faster than the share sheet
+              anyway.
+            </p>
+          </section>
+
+          <section>
+            <h2>4. iPhone: double-tap the back of your phone</h2>
+            <p>
+              <b>Copy → double-tap → pick a variant → paste.</b> No app to open. The
+              Shortcut reads your clipboard, so there is nothing to paste into.
+            </p>
+
+            <p className="field-label">Build the shortcut</p>
+            <p>
+              Shortcuts app → new shortcut → <b>ⓘ</b> → turn on <i>Show in Share Sheet</i>,
+              accept <i>Text</i>. Then add:
+            </p>
+            <ol className="steps">
+              <li><b>If</b> — <i>Shortcut Input</i> <i>has any value</i></li>
+              <li>· <b>Set Variable</b> <code>Source</code> to <i>Shortcut Input</i></li>
+              <li><b>Otherwise</b></li>
+              <li>· <b>Get Clipboard</b>, then <b>Set Variable</b> <code>Source</code> to <i>Clipboard</i></li>
+              <li><b>End If</b></li>
+              <li>
+                <b>Get Contents of URL</b> — <code>{(origin || "https://your-site") + "/api/rephrase"}</code>,
+                method <b>POST</b>, header <code>Content-Type: application/json</code>,
+                request body <b>JSON</b> with <code>text</code> = <i>Source</i> and{" "}
+                <code>tone</code> = <code>{tone}</code>
+              </li>
+              <li><b>Get Dictionary Value</b> — key <code>variants</code></li>
+              <li><b>Choose from List</b></li>
+              <li><b>Copy to Clipboard</b> — <i>Chosen Item</i></li>
+            </ol>
+            <p>
+              Name it <b>Rephrase</b>. The If/Otherwise means one shortcut covers both
+              triggers: shared text when you use the share sheet, clipboard otherwise.
+            </p>
+
+            <p className="field-label">Wire it to Back Tap</p>
+            <p>
+              Settings → Accessibility → Touch → <b>Back Tap</b> → <b>Double Tap</b> →
+              scroll to Shortcuts → <b>Rephrase</b>. Works on iPhone 8 and later.
+            </p>
+            <p>
+              It can also go on a Home Screen widget, in Control Center, or on the Action
+              Button if your iPhone has one. Duplicate the shortcut with a different{" "}
+              <code>tone</code> value for a second style, or swap <b>Choose from List</b>{" "}
+              for a <b>Choose from Menu</b> to pick the tone each time.
             </p>
           </section>
 

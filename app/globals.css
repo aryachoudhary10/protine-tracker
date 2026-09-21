@@ -686,3 +686,15 @@ a.brand { text-decoration: none; color: inherit; }
   .prose h1 { font-size: 32px; }
   .prose .bar-space { display: none; }
 }
+
+/* Numbered build steps on /tools. Tighter than a prose list because each line
+   is one action to perform, not a sentence to read. */
+.prose ol.steps {
+  margin: 10px 0 14px;
+  padding-inline-start: 22px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  max-width: 62ch;
+}
+.prose ol.steps li { margin-bottom: 7px; padding-left: 2px; }
+.prose ol.steps code { font-size: .86em; }
