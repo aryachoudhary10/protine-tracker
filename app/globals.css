@@ -698,3 +698,10 @@ a.brand { text-decoration: none; color: inherit; }
 }
 .prose ol.steps li { margin-bottom: 7px; padding-left: 2px; }
 .prose ol.steps code { font-size: .86em; }
+
+.prose ol.steps ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+  list-style: disc;
+}
+.prose ol.steps ul li { margin-bottom: 4px; }

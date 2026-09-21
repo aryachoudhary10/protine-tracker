@@ -139,28 +139,36 @@ export default function Tools() {
 
             <p className="field-label">Build the shortcut</p>
             <p>
-              Shortcuts app → new shortcut → <b>ⓘ</b> → turn on <i>Show in Share Sheet</i>,
-              accept <i>Text</i>. Then add:
+              Shortcuts app → <b>+</b> → <i>Add Action</i>. Search for each action by name
+              and add them in this order:
             </p>
             <ol className="steps">
-              <li><b>If</b> — <i>Shortcut Input</i> <i>has any value</i></li>
-              <li>· <b>Set Variable</b> <code>Source</code> to <i>Shortcut Input</i></li>
-              <li><b>Otherwise</b></li>
-              <li>· <b>Get Clipboard</b>, then <b>Set Variable</b> <code>Source</code> to <i>Clipboard</i></li>
-              <li><b>End If</b></li>
+              <li><b>Get Clipboard</b></li>
               <li>
-                <b>Get Contents of URL</b> — <code>{(origin || "https://your-site") + "/api/rephrase"}</code>,
-                method <b>POST</b>, header <code>Content-Type: application/json</code>,
-                request body <b>JSON</b> with <code>text</code> = <i>Source</i> and{" "}
-                <code>tone</code> = <code>{tone}</code>
+                <b>Get Contents of URL</b> — paste{" "}
+                <code>{(origin || "https://your-site") + "/api/rephrase"}</code> into the URL
+                field, then tap the <b>⌄</b> arrow to expand it and set:
+                <ul>
+                  <li>Method → <b>POST</b></li>
+                  <li>Headers → <code>Content-Type</code> = <code>application/json</code></li>
+                  <li>Request Body → <b>JSON</b></li>
+                  <li>Add field, type <i>Text</i>, key <code>text</code>, value = the blue{" "}
+                    <b>Clipboard</b> variable above the keyboard</li>
+                  <li>Add field, type <i>Text</i>, key <code>tone</code>, value <code>{tone}</code></li>
+                </ul>
               </li>
               <li><b>Get Dictionary Value</b> — key <code>variants</code></li>
               <li><b>Choose from List</b></li>
-              <li><b>Copy to Clipboard</b> — <i>Chosen Item</i></li>
+              <li><b>Copy to Clipboard</b></li>
             </ol>
             <p>
-              Name it <b>Rephrase</b>. The If/Otherwise means one shortcut covers both
-              triggers: shared text when you use the share sheet, clipboard otherwise.
+              Rename it <b>Rephrase</b> by tapping the title. That is the whole shortcut —
+              five actions, no branching.
+            </p>
+            <p>
+              Optional: in <b>ⓘ</b> turn on <i>Show in Share Sheet</i> (accept <i>Text</i>) and
+              wrap step 1 in <b>If Shortcut Input has any value</b> / <b>Otherwise Get
+              Clipboard</b>. One shortcut then serves both the share sheet and Back Tap.
             </p>
 
             <p className="field-label">Wire it to Back Tap</p>
