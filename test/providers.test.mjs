@@ -51,5 +51,34 @@ try { await fresh.generate(args); check("none configured: throws", "no throw", "
 catch (e) { check("none configured: NO_PROVIDER", e.code, "NO_PROVIDER"); }
 
 globalThis.fetch = real;
-console.log(fail ? `\n${fail} FAILURES` : "\nall pass");
-process.exit(fail ? 1 : 0);
+
+// --- failure classification -------------------------------------------------
+// A retired model ID and a saturated free tier both look like "it stopped
+// working" from the outside, but the fixes are unrelated. These pin that the
+// message names the real cause -- the bug that made a dead Groq model report
+// itself as "Every backend is busy right now".
+
+const { explainFailures } = await import("../lib/providers/index.js");
+let f2 = 0;
+const says = (name, failures, needle) => {
+  const msg = explainFailures(failures);
+  const ok = msg.toLowerCase().includes(needle.toLowerCase());
+  if (!ok) f2++;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(34)} -> ${msg}`);
+};
+
+says("bad model names the model", [{ provider: "groq", kind: "bad_model" }], "model");
+says("auth names the key",        [{ provider: "groq", kind: "auth" }], "key");
+says("rate limit names the limit",[{ provider: "groq", kind: "rate_limit" }], "limit");
+says("timeout names the timeout", [{ provider: "groq", kind: "timeout" }], "respond in time");
+says("outage names the outage",   [{ provider: "groq", kind: "upstream_down" }], "outage");
+says("mixed lists each cause",    [{ provider: "groq", kind: "auth" }, { provider: "cloudflare", kind: "bad_model" }], "cloudflare");
+
+// The regression that started this: a 404 must not be reported as "busy".
+const deadModel = explainFailures([{ provider: "groq", kind: "bad_model" }]);
+if (/busy/i.test(deadModel)) { f2++; console.log("FAIL  dead model must not say 'busy'"); }
+else console.log("PASS  dead model is never reported as 'busy'");
+
+const total = fail + f2;
+console.log(total ? `\n${total} FAILURES` : "\nall pass");
+process.exit(total ? 1 : 0);

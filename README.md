@@ -17,7 +17,7 @@ Browser  ──POST /api/rephrase──►  rate limit (Upstash)
                              provider chain, in order
                        ┌────────────────┼────────────────┐
                   Cloudflare          Groq          OpenRouter
-                  Workers AI      (Llama 3.3)       (DeepSeek)
+                  Workers AI      (gpt-oss)         (DeepSeek)
                        └────────────────┴────────────────┘
                               first one that answers wins
 ```
@@ -31,15 +31,30 @@ paragraph is essentially indistinguishable from GPT-4-class output.
 | Provider | Free allowance | Default model |
 |---|---|---|
 | Cloudflare Workers AI | 10,000 neurons/day (~1,300 rewrites), no card | `@cf/meta/llama-4-scout-17b-16e-instruct` |
-| Groq | 30 req/min; 70B: 1,000 req + 100k tok/day | `llama-3.3-70b-versatile` |
+| Groq | 30 req/min, generous daily token budget | `openai/gpt-oss-120b` |
 | OpenRouter | 50 req/day, or 1,000/day after a one-time $10 | `deepseek/deepseek-chat-v3:free` |
 
 Cloudflare leads because it bills cheap overage ($0.011/1k neurons) instead of
 hard-failing at the cap — which matters when real users hit the site.
 
-> Free tiers die without notice. Cerebras removed its permanent free tier in
-> July 2026. That's why everything provider-specific lives in `lib/providers/`
-> behind one interface — adding or reordering a backend touches nothing else.
+> Free tiers *and model IDs* both die without notice. Cerebras removed its
+> permanent free tier in July 2026, and Groq decommissioned
+> `llama-3.3-70b-versatile` on 16 August 2026 — a retired ID 404s every single
+> request. That's why everything provider-specific lives in `lib/providers/`
+> behind one interface, why every model is overridable by env var, and why
+> `GET /api/rephrase` reports the model each provider will actually call.
+
+`openai/gpt-oss-120b` is an open-weights model running on Groq's hardware.
+Despite the name it is not the OpenAI API — no OpenAI account, no OpenAI
+billing, and nothing is sent to OpenAI.
+
+### When rewriting stops working
+
+`GET /api/rephrase` is the diagnostic. It lists which providers have keys and
+which model each will call, exposing no secret. A failed rewrite names its own
+cause rather than claiming the backend is busy — "the configured model is not
+available", "API key rejected", "free-tier limit reached" — and the response
+body carries a `failures` array with each provider's status code.
 
 ---
 
